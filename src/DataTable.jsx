@@ -21,7 +21,7 @@ export default function DataTable({ columns, rows }) {
   );
 
   return (
-    <Table striped style={{ display: 'block' }}>
+    <Table striped style={{ display: 'block', overflowX: 'scroll' }}>
       <thead>{tr}</thead>
       <tbody>{tds}</tbody>
     </Table>

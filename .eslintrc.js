@@ -17,4 +17,11 @@ module.exports = {
     'react/forbid-prop-types': 'off',
     'react/jsx-props-no-spreading': 'off',
   },
+  settings: {
+    'import/resolver': {
+      node: {
+        extensions: ['.js', '.jsx', '.ts', '.tsx'],
+      },
+    },
+  },
 };

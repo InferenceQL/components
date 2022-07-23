@@ -3,7 +3,7 @@
 ## Install
 
 ```shell
-pnpm add OpenIQL/storybook
+pnpm add InferenceQL/storybook
 ```
 
 ## Development

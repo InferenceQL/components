@@ -8,7 +8,7 @@ export default {
   argTypes: {},
 };
 
-function Template({ disabled, value }) {
+function Template({ disabled, error, value }) {
   const [valueState, setValueState] = useState(value);
 
   const setValueStateWrapper = (valuee) => {
@@ -18,6 +18,7 @@ function Template({ disabled, value }) {
   return (
     <HighlightInput
       disabled={disabled}
+      error={error}
       value={valueState}
       onChange={setValueStateWrapper}
     />
@@ -40,6 +41,12 @@ SingleLine.args = {
 export const Disabled = Template.bind({});
 Disabled.args = {
   disabled: true,
+  value: 'SELECT * FROM data;',
+};
+
+export const Error = Template.bind({});
+Error.args = {
+  error: true,
   value: 'SELECT * FROM data;',
 };
 
