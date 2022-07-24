@@ -4,6 +4,9 @@ import cars from './assets/cars.json';
 import carsTypes from './assets/cars.types.json';
 import penguins from './assets/penguins.json';
 import penguinsTypes from './assets/penguins.types.json';
+import satellites from './assets/satellites.json';
+import satellitesTypes from './assets/satellites.types.json';
+import { assoc } from 'ramda';
 
 export default {
   title: 'PairPlot',
@@ -50,4 +53,34 @@ Missing.args = {
     Species,
     'Body Mass (g)': mass,
   }))(penguinsTypes),
+};
+
+export const Satellites = Template.bind({});
+Satellites.args = {
+  data: satellites,
+  types: satellitesTypes,
+};
+
+export const Bar = Template.bind({});
+Bar.args = {
+  data: [
+    { animal: 'cat' },
+    { animal: 'dog' },
+    { animal: 'bird' },
+    { animal: 'fish' },
+    { animal: 'mouse' },
+    { animal: 'hamster' },
+    { animal: 'snake' },
+    { animal: 'horse' },
+    { animal: 'bat' },
+    { animal: 'sloth' },
+    { animal: 'lizard' },
+    { animal: 'shark' },
+    { animal: 'octopus' },
+    { animal: 'insect' },
+    { animal: 'smoot' },
+  ]
+    .reverse()
+    .map((m, i) => assoc('count', 2 ** i, m)),
+  types: { animal: 'nominal', count: 'quantitative' },
 };

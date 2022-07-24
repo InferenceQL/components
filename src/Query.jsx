@@ -21,6 +21,7 @@ export default function Query({ execute, initialQuery, statType }) {
   const [queryValue, setQueryValue] = React.useState(initialQuery || '');
   const [queryResult, setQueryResult] = React.useState();
   const [errorValue, setErrorValue] = React.useState();
+  const [activeTab, setActiveTab] = React.useState(0);
 
   const buttonRef = React.useRef();
   const editorRef = React.useRef();
@@ -94,7 +95,7 @@ export default function Query({ execute, initialQuery, statType }) {
       {queryResult && (
         <>
           <Space h="sm" />
-          <Tabs>
+          <Tabs active={activeTab} onTabChange={setActiveTab}>
             <Tabs.Tab label="Table">
               <DataTable
                 columns={queryResult.columns}
