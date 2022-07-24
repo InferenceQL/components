@@ -1,20 +1,11 @@
-import PropTypes from 'prop-types';
-import React from 'react';
 import { ArrowBackUp, Database } from 'tabler-icons-react';
-import { Button, Loader, Paper, Space, Tabs } from '@mantine/core';
-/* eslint-disable import/no-named-default */
-import { default as Input } from './HighlightInput';
-// import { default as Input } from './PrismInput';
+import { Button, LoadingOverlay, Paper, Tabs } from '@mantine/core';
+import { getHotkeyHandler } from '@mantine/hooks';
+import React from 'react';
+import PropTypes from 'prop-types';
 import DataTable from './DataTable';
+import HighlightInput from './HighlightInput';
 import PairPlot from './PairPlot';
-
-const usePrevious = (value) => {
-  const ref = React.useRef();
-  React.useEffect(() => {
-    ref.current = value;
-  });
-  return ref.current;
-};
 
 export default function Query({ execute, initialQuery, statType }) {
   const [isLoading, setIsLoading] = React.useState(false);
@@ -34,89 +25,79 @@ export default function Query({ execute, initialQuery, statType }) {
     setIsLoading(true);
   };
 
+  const handleClear = () => setQueryResult();
+
   const onChange = (value) => {
     setQueryValue(value);
     setErrorValue();
   };
 
-  const handleReset = () => setQueryResult();
-
-  const onKeyDown = (event) => {
-    if (event.key === 'Enter' && event.shiftKey) {
-      event.stopPropagation();
-      event.preventDefault();
-      handleExecute();
-    }
-  };
-
-  const previousQueryResult = usePrevious(queryResult);
-  React.useEffect(() => {
-    if (!queryResult && previousQueryResult) {
-      editorRef.current.focus();
-    } else if (queryResult && !previousQueryResult) {
-      buttonRef.current.focus();
-    }
-  }, [buttonRef, queryResult, previousQueryResult]);
+  const onKeyDown = getHotkeyHandler([
+    ['mod+Enter', handleExecute],
+    ['shift+Enter', handleExecute],
+  ]);
 
   return (
-    <Paper p="sm" radius="sm" shadow="md" withBorder>
-      <Input
-        disabled={isLoading || Boolean(queryResult)}
+    <Paper p="xs" radius="xs" shadow="md" withBorder>
+      <HighlightInput
+        disabled={isLoading}
         error={Boolean(errorValue)}
         onChange={onChange}
         onKeyDown={onKeyDown}
         ref={editorRef}
         value={queryValue}
       />
-      {queryResult ? (
+
+      <Button
+        disabled={isLoading}
+        loading={isLoading}
+        leftIcon={<Database size={18} />}
+        mt="sm"
+        mr="sm"
+        ref={buttonRef}
+        variant="default"
+        onClick={handleExecute}
+      >
+        Execute
+      </Button>
+
+      {queryResult && (
         <Button
-          leftIcon={<ArrowBackUp />}
-          mt="md"
+          leftIcon={<ArrowBackUp size={18} />}
+          mt="sm"
           ref={buttonRef}
           variant="default"
-          onClick={handleReset}
+          onClick={handleClear}
         >
-          Reset
-        </Button>
-      ) : (
-        <Button
-          disabled={isLoading}
-          leftIcon={
-            isLoading ? <Loader size="sm" variant="dots" /> : <Database />
-          }
-          mt="md"
-          ref={buttonRef}
-          variant="default"
-          onClick={handleExecute}
-        >
-          Execute
+          Clear
         </Button>
       )}
+
       {queryResult && (
-        <>
-          <Space h="sm" />
-          <Tabs active={activeTab} onTabChange={setActiveTab}>
-            <Tabs.Tab label="Table">
+        <Tabs mt="sm" active={activeTab} onTabChange={setActiveTab}>
+          <Tabs.Tab label="Table">
+            <div style={{ position: 'relative' }}>
+              <LoadingOverlay visible={isLoading} transitionDuration={0} />
               <DataTable
                 columns={queryResult.columns}
                 pagination={false}
                 rows={queryResult.rows}
               />
+            </div>
+          </Tabs.Tab>
+          {statType && (
+            <Tabs.Tab label="Plots">
+              <PairPlot
+                data={queryResult.rows}
+                types={Object.fromEntries(
+                  queryResult.columns
+                    .map((col) => [col, statType(col)])
+                    .filter(([col, type]) => col && type)
+                )}
+              />
             </Tabs.Tab>
-            {statType && (
-              <Tabs.Tab label="Plots">
-                <PairPlot
-                  data={queryResult.rows}
-                  types={Object.fromEntries(
-                    queryResult.columns
-                      .map((col) => [col, statType(col)])
-                      .filter(([col, type]) => col && type)
-                  )}
-                />
-              </Tabs.Tab>
-            )}
-          </Tabs>
-        </>
+          )}
+        </Tabs>
       )}
     </Paper>
   );

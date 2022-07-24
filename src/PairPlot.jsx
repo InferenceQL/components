@@ -48,16 +48,38 @@ const startsWith = curry((s2, s1) => s1.toLowerCase().startsWith(s2));
 export default function PairPlot({ data, maxPairs, types }) {
   const columns = Object.keys(types);
   const nominals = columns.filter((col) => types[col] === 'nominal');
+  const color = { default: 'steelblue', selected: 'goldenrod' };
+
+  const truncatedName = (name) => `truncated_${name}`;
+
   const orders = zipObj(
     nominals,
-    nominals.map((nominal) => freq(map(prop(nominal), data)))
+    nominals.map((nominal) =>
+      pipe(map(prop(nominal)), freq, append(truncatedName(nominal)))(data)
+    )
   );
 
-  const color = { default: 'steelblue', selected: 'goldenrod' };
+  const nominalLimit = 10;
+
+  /* Returns a Vega-Lite calculation that limits */
+  const truncateCalculate = curry(
+    (n, field) =>
+      `indexof(${JSON.stringify(
+        orders[field]
+      )}, datum['${field}']) < ${n} ? datum['${field}'] : 'All Others'`
+  );
+
+  const nominalTransforms = nominals.flatMap((nominalField) => [
+    {
+      calculate: truncateCalculate(nominalLimit, nominalField),
+      as: truncatedName(nominalField),
+    },
+  ]);
 
   const quantitativePlot = (fieldA, fieldB) => {
     const isProbability = startsWith('prob');
     const isCount = startsWith('count');
+
     const [fieldX, fieldY] =
       isProbability(fieldA) || isCount(fieldA)
         ? [fieldB, fieldA]
@@ -83,24 +105,22 @@ export default function PairPlot({ data, maxPairs, types }) {
     };
   };
 
-  const truncate = curry(
-    (n, field) =>
-      `indexof(${JSON.stringify(
-        orders[field]
-      )}, datum['${field}']) < ${n} ? datum['${field}'] : 'All Others'`
-  );
-
   const nominalPlot = (fieldX, fieldY) => {
-    const n = 10;
-    const xOrder = [...orders[fieldX], 'calcX'];
-    const yOrder = [...orders[fieldY], 'calcY'];
+    const x = {
+      title: fieldX,
+      field: truncatedName(fieldX),
+      order: orders[fieldX],
+    };
+    const y = {
+      title: fieldY,
+      field: truncatedName(fieldY),
+      order: orders[fieldY],
+    };
 
     return {
       transform: [
-        { filter: `isValid(datum['${fieldX}'])` },
-        { filter: `isValid(datum['${fieldY}'])` },
-        { calculate: truncate(n, fieldX), as: 'truncatedX' },
-        { calculate: truncate(n, fieldY), as: 'truncatedY' },
+        { filter: `isValid(datum['${x.field}'])` },
+        { filter: `isValid(datum['${y.field}'])` },
       ],
       layer: [
         {
@@ -117,16 +137,16 @@ export default function PairPlot({ data, maxPairs, types }) {
           ],
           encoding: {
             x: {
-              field: 'truncatedX',
+              field: x.field,
+              title: x.title,
+              sort: x.order,
               type: 'nominal',
-              title: fieldX,
-              sort: xOrder,
             },
             y: {
-              field: 'truncatedY',
+              field: y.field,
+              title: y.title,
+              sort: y.order,
               type: 'nominal',
-              title: fieldY,
-              sort: yOrder,
             },
             size: { aggregate: 'count', legend: null },
             color: { value: color.default },
@@ -137,16 +157,16 @@ export default function PairPlot({ data, maxPairs, types }) {
           transform: [{ filter: { param: 'selected', empty: false } }],
           encoding: {
             x: {
-              field: 'truncatedX',
+              field: x.field,
+              title: x.title,
+              sort: x.order,
               type: 'nominal',
-              title: fieldX,
-              sort: xOrder,
             },
             y: {
-              field: 'truncatedY',
+              field: y.field,
+              title: y.field,
+              sort: y.order,
               type: 'nominal',
-              title: fieldY,
-              sort: yOrder,
             },
             size: { aggregate: 'count', legend: null },
             color: { value: color.selected },
@@ -156,83 +176,71 @@ export default function PairPlot({ data, maxPairs, types }) {
     };
   };
 
-  const barChart = ({ quantField, nominalField }) => {
-    const n = 10;
-    return {
-      transform: [
-        { filter: `isValid(datum['${nominalField}'])` },
-        {
-          window: [{ op: 'rank', as: 'rank' }],
-          sort: [{ field: quantField, order: 'descending' }],
-        },
-        { filter: `datum.rank <= ${n}` },
-      ],
-      mark: 'bar',
-      encoding: {
-        x: {
-          field: nominalField,
-          type: 'nominal',
-          title: `${nominalField} (top ${n})`,
-          sort: {
-            field: quantField,
-            order: 'descending',
-          },
-        },
-        y: { field: quantField, type: 'quantitative' },
-        color: { value: color.default },
+  const barChart = ({ quantField, nominalField }) => ({
+    transform: [
+      { filter: `isValid(datum['${nominalField}'])` },
+      {
+        window: [{ op: 'rank', as: 'rank' }],
+        sort: [{ field: quantField, order: 'descending' }],
       },
-    };
-  };
-
-  const jitterPlot = ({ nominalField, quantField }) => {
-    const n = 5;
-    const order = [...orders[nominalField], 'truncated'];
-
-    return {
-      mark: 'circle',
-      transform: [
-        { filter: `isValid(datum['${nominalField}'])` },
-        { calculate: truncate(n, nominalField), as: 'truncated' },
-      ],
-      width: { step: 40 },
-      params: [
-        {
-          name: 'selected',
-          select: { type: 'interval', encodings: ['x', 'y'] },
-        },
-      ],
-      encoding: {
-        x: {
-          field: 'truncated',
-          type: 'nominal',
-          title: nominalField,
-          sort: order,
-        },
-        y: { field: quantField, type: 'quantitative', scale: { zero: false } },
-        xOffset: { field: 'offset', type: 'quantitative' },
-        color: {
-          condition: { param: 'selected', empty: false, value: color.selected },
-          value: color.default,
+      { filter: `datum.rank <= ${nominalLimit}` },
+    ],
+    mark: 'bar',
+    encoding: {
+      x: {
+        field: nominalField,
+        type: 'nominal',
+        title: `${nominalField} (top ${nominalLimit})`,
+        sort: {
+          field: quantField,
+          order: 'descending',
         },
       },
-    };
-  };
+      y: { field: quantField, type: 'quantitative' },
+      color: { value: color.default },
+    },
+  });
+
+  const jitterPlot = ({ nominalField, quantField }) => ({
+    mark: 'circle',
+    transform: [{ filter: `isValid(datum['${nominalField}'])` }],
+    width: { step: 40 },
+    params: [
+      {
+        name: 'selected',
+        select: { type: 'interval', encodings: ['x', 'y'] },
+      },
+    ],
+    encoding: {
+      x: {
+        field: truncatedName(nominalField),
+        type: 'nominal',
+        title: nominalField,
+        sort: orders[nominalField],
+      },
+      y: { field: quantField, type: 'quantitative', scale: { zero: false } },
+      xOffset: { field: 'offset', type: 'quantitative' },
+      color: {
+        condition: { param: 'selected', empty: false, value: color.selected },
+        value: color.default,
+      },
+    },
+  });
 
   const pairSpec = ([fieldX, fieldY]) => {
-    const [typeX, typeY] = [types[fieldX], types[fieldY]];
+    const x = { field: fieldX, type: types[fieldX] };
+    const y = { field: fieldY, type: types[fieldY] };
 
-    if (typeX === 'quantitative' && typeY === 'quantitative') {
-      return quantitativePlot(fieldX, fieldY);
+    if (x.type === 'quantitative' && y.type === 'quantitative') {
+      return quantitativePlot(x.field, y.field);
     }
 
-    if (typeX === 'nominal' && typeY === 'nominal') {
-      return nominalPlot(fieldX, fieldY);
+    if (x.type === 'nominal' && y.type === 'nominal') {
+      return nominalPlot(x.field, y.field);
     }
 
-    // One quantitative field, one nominal field:
-
-    const quantField = typeX === 'quantitative' ? fieldX : fieldY;
-    const nominalField = typeX === 'nominal' ? fieldX : fieldY;
+    const quantField = x.type === 'quantitative' ? x.field : y.field;
+    const nominalField = x.type === 'nominal' ? x.field : y.field;
 
     if (startsWith('count', quantField)) {
       return barChart({ quantField, nominalField });
@@ -248,6 +256,7 @@ export default function PairPlot({ data, maxPairs, types }) {
     data: { values: data },
     transform: [
       { calculate: 'clamp(sampleNormal(0.5, 0.25), 0, 1)', as: 'offset' },
+      ...nominalTransforms,
     ],
     vconcat: pairs.map(pairSpec),
     config: {
@@ -263,13 +272,11 @@ export default function PairPlot({ data, maxPairs, types }) {
 const types = ['quantitative', 'temporal', 'ordinal', 'nominal', 'geojson'];
 
 PairPlot.propTypes = {
-  // colors: PropTypes.arrayOf(PropTypes.string),
   data: PropTypes.arrayOf(PropTypes.object).isRequired,
   maxPairs: PropTypes.number,
   types: PropTypes.objectOf(PropTypes.oneOf(types)).isRequired,
 };
 
 PairPlot.defaultProps = {
-  // colors: {selected: '#1C61A5', unselected: '#FC6910'},
   maxPairs: 8,
 };

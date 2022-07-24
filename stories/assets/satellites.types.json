@@ -7,7 +7,6 @@
   "Purpose": "nominal",
   "Anticipated_Lifetime": "quantitative",
   "Users": "nominal",
-  "Date_of_Launch": "quantitative",
   "Class_of_Orbit": "nominal",
   "Launch_Mass_kg": "quantitative",
   "Launch_Vehicle": "nominal",
