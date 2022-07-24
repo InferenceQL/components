@@ -1,0 +1,9 @@
+{
+  "Species": "nominal",
+  "Island": "nominal",
+  "Beak Length (mm)": "quantitative",
+  "Beak Depth (mm)": "quantitative",
+  "Flipper Length (mm)": "quantitative",
+  "Body Mass (g)": "quantitative",
+  "Sex": "nominal"
+}
