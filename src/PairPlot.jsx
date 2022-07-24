@@ -172,8 +172,7 @@ export default function PairPlot({ data, maxColumns, maxPairs, types }) {
     transform: [
       { calculate: 'clamp(sampleNormal(0.5, 0.25), 0, 1)', as: 'offset' },
     ],
-    concat: pairs.map(pairSpec),
-    columns: maxColumns,
+    vconcat: pairs.map(pairSpec),
     config: {
       scale: {
         bandWithNestedOffsetPaddingInner: 0.6,
@@ -188,7 +187,6 @@ const types = ['quantitative', 'temporal', 'ordinal', 'nominal', 'geojson'];
 
 PairPlot.propTypes = {
   // colors: PropTypes.arrayOf(PropTypes.string),
-  maxColumns: PropTypes.number,
   data: PropTypes.arrayOf(PropTypes.object).isRequired,
   maxPairs: PropTypes.number,
   types: PropTypes.objectOf(PropTypes.oneOf(types)).isRequired,
@@ -196,6 +194,5 @@ PairPlot.propTypes = {
 
 PairPlot.defaultProps = {
   // colors: {selected: '#1C61A5', unselected: '#FC6910'},
-  maxColumns: 2,
   maxPairs: 8,
 };
