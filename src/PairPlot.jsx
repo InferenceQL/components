@@ -1,24 +1,7 @@
 import PropTypes from 'prop-types';
 import React from 'react';
 import { VegaLite } from 'react-vega';
-import {
-  append,
-  countBy,
-  curry,
-  descend,
-  evolve,
-  identity,
-  includes,
-  map,
-  nth,
-  of,
-  pipe,
-  prop,
-  sort,
-  take,
-  toPairs,
-  zipObj,
-} from 'ramda';
+import { append, curry, of } from 'ramda';
 
 /*
  * Returns all the combinations of an array of a given length.
@@ -34,47 +17,12 @@ function combinations(arr, n) {
 }
 
 /*
- * Returns the top n most frequent values in an array.
- */
-const top = curry((n, arr) =>
-  pipe(
-    countBy(identity),
-    toPairs,
-    sort(descend(nth(1))),
-    take(n),
-    map(nth(0))
-  )(arr)
-);
-
-/*
- * Returns a function that returns x if x is in arr, otherwise y.
- */
-const truncate = curry((arr, replacement, x) =>
-  includes(x, arr) ? x : replacement
-);
-
-const truncateNominals = curry((n, props, arr) => {
-  const transformations = zipObj(
-    props,
-    map((field) => truncate(top(n, map(prop(field), arr)), 'Others'), props)
-  );
-  return map(evolve(transformations), arr);
-});
-
-/*
  * Returns true if s1 starts with s2. Uses a case insensitive comparison.
  */
 const startsWith = curry((s2, s1) => s1.toLowerCase().startsWith(s2));
 
-export default function PairPlot({
-  data,
-  maxColumns,
-  maxNominals,
-  maxPairs,
-  types,
-}) {
+export default function PairPlot({ data, maxColumns, maxPairs, types }) {
   const columns = Object.keys(types);
-  const nominals = columns.filter((col) => types[col] === 'nominal');
 
   const color = { default: 'steelblue', selected: 'goldenrod' };
 
@@ -107,6 +55,10 @@ export default function PairPlot({
   };
 
   const nominalPlot = (fieldX, fieldY) => ({
+    transform: [
+      { filter: `isValid(datum['${fieldX}'])` },
+      { filter: `isValid(datum['${fieldY}'])` },
+    ],
     layer: [
       {
         mark: 'circle',
@@ -141,6 +93,7 @@ export default function PairPlot({
   });
 
   const barChart = ({ quantField, nominalField }) => ({
+    transform: [{ filter: `isValid(datum['${nominalField}'])` }],
     layer: [
       {
         mark: 'bar',
@@ -169,6 +122,7 @@ export default function PairPlot({
 
   const jitterPlot = ({ nominalField, quantField }) => ({
     mark: 'circle',
+    transform: [{ filter: `isValid(datum['${nominalField}'])` }],
     width: { step: 40 },
     params: [
       {
@@ -210,13 +164,11 @@ export default function PairPlot({
     return jitterPlot({ quantField, nominalField });
   };
 
-  const truncatedData = truncateNominals(maxNominals, nominals, data);
-
   const pairs = combinations(columns, 2).slice(0, maxPairs);
 
   const spec = {
     $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
-    data: { values: truncatedData },
+    data: { values: data },
     transform: [
       { calculate: 'clamp(sampleNormal(0.5, 0.25), 0, 1)', as: 'offset' },
     ],
@@ -237,7 +189,6 @@ const types = ['quantitative', 'temporal', 'ordinal', 'nominal', 'geojson'];
 PairPlot.propTypes = {
   // colors: PropTypes.arrayOf(PropTypes.string),
   maxColumns: PropTypes.number,
-  maxNominals: PropTypes.number,
   data: PropTypes.arrayOf(PropTypes.object).isRequired,
   maxPairs: PropTypes.number,
   types: PropTypes.objectOf(PropTypes.oneOf(types)).isRequired,
@@ -246,6 +197,5 @@ PairPlot.propTypes = {
 PairPlot.defaultProps = {
   // colors: {selected: '#1C61A5', unselected: '#FC6910'},
   maxColumns: 2,
-  maxNominals: 8,
   maxPairs: 8,
 };
