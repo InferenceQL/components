@@ -26,7 +26,7 @@ const language = ({ regex }) => {
     'where',
   ];
 
-  const BUILT_IN = ['conditioned', 'constrained', 'generate', 'under'];
+  const BUILT_IN = ['conditioned', 'constrained', 'generate', 'under', 'given'];
 
   const LITERALS = ['true', 'false', 'NULL'];
 
@@ -54,7 +54,7 @@ const language = ({ regex }) => {
 
   const SCALAR = {
     begin: /(?<=\b(SELECT|WHERE|ORDER\s+BY|LIMIT)\b)/,
-    end: /(?=\b(ASC|AS|DESC|FROM|GROUP|WHERE|ORDER\s+BY)\b)/,
+    end: /(?=\b(ASC|AS|DESC|FROM|GROUP|WHERE|ORDER\s+BY|LIMIT)\b)/,
     keywords: {
       built_in: [
         'and',
