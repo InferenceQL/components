@@ -28,7 +28,7 @@ GenerateQuery.propTypes = {
 };
 
 GenerateQuery.defaultProps = {
-  model: 'baseline_model',
+  model: 'satellites_model',
 };
 
 function AggregateBarChart({ columns, rows, maxShown }) {

@@ -164,7 +164,7 @@ export default function PairPlot({ data, maxPairs, types }) {
             },
             y: {
               field: y.field,
-              title: y.field,
+              title: y.title,
               sort: y.order,
               type: 'nominal',
             },

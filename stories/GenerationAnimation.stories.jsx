@@ -24,6 +24,6 @@ export const Top5 = Template.bind({});
 Top5.args = {
   columns: ['Purpose', 'Country_of_Operator'],
   given: { Class_of_Orbit: 'GEO', Dry_mass_kg: 500 },
-  maxShownn: 5,
+  maxShown: 5,
   rows,
 };

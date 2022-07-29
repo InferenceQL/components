@@ -1,0 +1,17 @@
+{
+  "Country_of_Contractor": "nominal",
+  "Inclination_radians": "quantitative",
+  "Period_minutes": "quantitative",
+  "Launch_Site": "nominal",
+  "Country_of_Operator": "nominal",
+  "Purpose": "nominal",
+  "Anticipated_Lifetime": "quantitative",
+  "Users": "nominal",
+  "Class_of_Orbit": "nominal",
+  "Launch_Mass_kg": "quantitative",
+  "Launch_Vehicle": "nominal",
+  "Source_Used_for_Orbital_Data": "nominal",
+  "Eccentricity": "quantitative",
+  "Perigee_km": "quantitative",
+  "Apogee_km": "quantitative"
+}

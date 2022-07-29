@@ -1,4 +1,5 @@
 import React from 'react';
+import { assoc } from 'ramda';
 import PairPlot from '../src/PairPlot';
 import cars from './assets/cars.json';
 import carsTypes from './assets/cars.types.json';
@@ -6,7 +7,6 @@ import penguins from './assets/penguins.json';
 import penguinsTypes from './assets/penguins.types.json';
 import satellites from './assets/satellites.json';
 import satellitesTypes from './assets/satellites.types.json';
-import { assoc } from 'ramda';
 
 export default {
   title: 'PairPlot',

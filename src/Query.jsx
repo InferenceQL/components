@@ -6,12 +6,33 @@ import PropTypes from 'prop-types';
 import DataTable from './DataTable';
 import HighlightInput from './HighlightInput';
 import PairPlot from './PairPlot';
+import WorldMap from './WorldMap';
+
+const useClearableState = (initialValue) => {
+  const [value, setValue] = React.useState(initialValue);
+  const clearValue = () => setValue();
+  return [value, setValue, clearValue];
+};
+
+const useSwitch = (initialValue) => {
+  const [value, setValue] = React.useState(initialValue);
+  const setTrue = () => setValue(true);
+  const setFalse = () => setValue(false);
+  return [value, setTrue, setFalse];
+};
+
+const both =
+  (f1, f2) =>
+  (...args) => {
+    f1.apply(this, args);
+    f2.apply(this, args);
+  };
 
 export default function Query({ execute, initialQuery, statType }) {
-  const [isLoading, setIsLoading] = React.useState(false);
+  const [isLoading, setIsLoading, setNotLoading] = useSwitch(false);
   const [queryValue, setQueryValue] = React.useState(initialQuery || '');
-  const [queryResult, setQueryResult] = React.useState();
-  const [errorValue, setErrorValue] = React.useState();
+  const [queryResult, setQueryResult, clearQueryResult] = useClearableState();
+  const [errorValue, setErrorValue, clearErrorValue] = useClearableState();
   const [activeTab, setActiveTab] = React.useState(0);
 
   const buttonRef = React.useRef();
@@ -19,17 +40,10 @@ export default function Query({ execute, initialQuery, statType }) {
 
   const handleExecute = () => {
     execute(queryValue)
-      .then(setQueryResult)
-      .catch(setErrorValue)
-      .finally(() => setIsLoading(false));
-    setIsLoading(true);
-  };
-
-  const handleClear = () => setQueryResult();
-
-  const onChange = (value) => {
-    setQueryValue(value);
-    setErrorValue();
+      .then(both(setQueryResult, clearErrorValue))
+      .catch(both(setErrorValue, clearQueryResult))
+      .finally(setNotLoading);
+    setIsLoading();
   };
 
   const onKeyDown = getHotkeyHandler([
@@ -37,12 +51,19 @@ export default function Query({ execute, initialQuery, statType }) {
     ['shift+Enter', handleExecute],
   ]);
 
+  const mapShown =
+    queryResult &&
+    statType &&
+    queryResult.columns.length === 2 &&
+    queryResult.columns.map(statType).includes('quantitative') &&
+    queryResult.columns.includes('Country_of_Operator');
+
   return (
     <Paper p="xs" radius="xs" shadow="md" withBorder>
       <HighlightInput
         disabled={isLoading}
         error={Boolean(errorValue)}
-        onChange={onChange}
+        onChange={both(setQueryValue, clearErrorValue)}
         onKeyDown={onKeyDown}
         ref={editorRef}
         value={queryValue}
@@ -67,7 +88,7 @@ export default function Query({ execute, initialQuery, statType }) {
           mt="sm"
           ref={buttonRef}
           variant="default"
-          onClick={handleClear}
+          onClick={clearQueryResult}
         >
           Clear
         </Button>
@@ -88,6 +109,18 @@ export default function Query({ execute, initialQuery, statType }) {
           {statType && (
             <Tabs.Tab label="Plots">
               <PairPlot
+                data={queryResult.rows}
+                types={Object.fromEntries(
+                  queryResult.columns
+                    .map((col) => [col, statType(col)])
+                    .filter(([col, type]) => col && type)
+                )}
+              />
+            </Tabs.Tab>
+          )}
+          {mapShown && (
+            <Tabs.Tab label="Map">
+              <WorldMap
                 data={queryResult.rows}
                 types={Object.fromEntries(
                   queryResult.columns
